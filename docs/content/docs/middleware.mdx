@@ -77,6 +77,35 @@ app.Use(mach.CORS([]string{"https://example.com", "https://app.example.com"}))
 app.Use(mach.CORS([]string{"*"}))
 ```
 
+For advanced configuration:
+
+```go
+app.Use(mach.CORSWithConfig(mach.CORSConfig{
+    AllowOrigins:     []string{"https://example.com"},
+    AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+    AllowHeaders:     []string{"Content-Type", "Authorization"},
+    ExposeHeaders:    []string{"X-Request-ID"},
+    AllowCredentials: true,
+    MaxAge:           86400,
+}))
+```
+
+### RequestID
+
+Generates and tracks a unique request ID for each request. Useful for debugging and logging:
+
+```go
+import "github.com/mrshabel/mach/middleware"
+
+app.Use(middleware.RequestID())
+```
+
+The middleware:
+- Generates a 128-bit random ID if not provided
+- Reuses incoming `X-Request-ID` header if present
+- Sets the ID in response header `X-Request-ID`
+- Stores it in request context for access in handlers
+
 ## Custom Middleware
 
 Writing custom middleware is simple. It just needs to return a function that wraps an `http.Handler`.
@@ -116,3 +145,7 @@ func PoweredBy() mach.MiddlewareFunc {
     }
 }
 ```
+
+## See Also
+
+- [Middleware Example](../_examples/middleware/main.go) - Complete middleware patterns

@@ -23,11 +23,11 @@ package mach
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -195,9 +195,9 @@ func (app *App) OPTIONS(path string, handler HandlerFunc) {
 }
 
 func (app *App) Static(prefix, dir string) {
-	// get file server
 	fileServer := http.FileServer(http.Dir(dir))
-	app.router.Handle(fmt.Sprintf("GET %s{path...}", prefix), http.StripPrefix(prefix, fileServer))
+	strippedPrefix := strings.TrimSuffix(prefix, "/")
+	app.router.Handle("GET "+strippedPrefix+"/{path...}", http.StripPrefix(strippedPrefix+"/", fileServer))
 }
 
 // Group creates a route group with common prefix and middleware

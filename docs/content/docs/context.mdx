@@ -64,6 +64,55 @@ if err != nil {
 // e.g., file, _ := fileHeader.Open()
 ```
 
+### Saving Uploaded Files
+
+Save uploaded files to disk with automatic content handling:
+
+```go
+// Save file to ./uploads/avatar.png
+err := c.SaveFile(fileHeader, "./uploads/avatar.png")
+if err != nil {
+    c.JSON(500, map[string]string{"error": "Failed to save file"})
+    return
+}
+c.JSON(200, map[string]string{"message": "File saved"})
+```
+
+### File Downloads
+
+Send files for download with proper headers:
+
+```go
+// Download a file with custom name
+err := c.DownloadFile("./files/report.pdf", "report-2024.pdf")
+```
+
+### Streaming Files
+
+Stream large files efficiently with range request support:
+
+```go
+// Stream video/audio with range support (partial content)
+err := c.StreamFile("./files/video.mp4")
+```
+
+Supports HTTP range requests for seeking and resumable downloads.
+
+### Serving Static Files
+
+Serve static files from a directory with directory listing support:
+
+```go
+app.GET("/files/{path...}", func(c *mach.Context) {
+    err := c.ServeStatic("./public")
+    if err != nil {
+        c.Text(404, "File not found")
+    }
+})
+```
+
+Looking for a complete example? See [file-upload](../_examples/file-upload/main.go) and [file-download](../_examples/file-download/main.go).
+
 ### Headers and Cookies
 
 ```go

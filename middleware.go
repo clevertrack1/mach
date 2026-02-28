@@ -1,9 +1,11 @@
 package mach
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"time"
 )
 
@@ -72,11 +74,26 @@ func Recovery() MiddlewareFunc {
 }
 
 func CORS(allowOrigins []string) MiddlewareFunc {
-	// check if wildcard is present
-	allowAll := false
-	origins := make(map[string]struct{}, len(allowOrigins))
+	return CORSWithConfig(CORSConfig{
+		AllowOrigins: allowOrigins,
+	})
+}
 
-	for _, origin := range allowOrigins {
+type CORSConfig struct {
+	AllowOrigins      []string
+	AllowMethods      []string
+	AllowHeaders      []string
+	ExposeHeaders     []string
+	AllowCredentials  bool
+	MaxAge            int
+	PreflightContinue bool
+}
+
+func CORSWithConfig(config CORSConfig) MiddlewareFunc {
+	allowAll := false
+	origins := make(map[string]struct{}, len(config.AllowOrigins))
+
+	for _, origin := range config.AllowOrigins {
 		if origin == "*" {
 			allowAll = true
 			break
@@ -84,27 +101,51 @@ func CORS(allowOrigins []string) MiddlewareFunc {
 		origins[origin] = struct{}{}
 	}
 
+	defaultMethods := []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"}
+	defaultHeaders := []string{"Content-Type", "Authorization"}
+
+	allowMethods := config.AllowMethods
+	if len(allowMethods) == 0 {
+		allowMethods = defaultMethods
+	}
+
+	allowHeaders := config.AllowHeaders
+	if len(allowHeaders) == 0 {
+		allowHeaders = defaultHeaders
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// validate that origin is whitelisted
 			origin := r.Header.Get("Origin")
 
-			// allow all origins
 			if allowAll {
 				w.Header().Set("Access-Control-Allow-Origin", "*")
-				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			} else if _, ok := origins[origin]; ok {
-				// allow specific origin with no caching
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Vary", "Origin")
-				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			}
 
-			// handle preflight request
+			if config.AllowCredentials {
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+			}
+
+			if len(config.ExposeHeaders) > 0 {
+				w.Header().Set("Access-Control-Expose-Headers", strings.Join(config.ExposeHeaders, ", "))
+			}
+
+			w.Header().Set("Access-Control-Allow-Methods", strings.Join(allowMethods, ", "))
+			w.Header().Set("Access-Control-Allow-Headers", strings.Join(allowHeaders, ", "))
+
+			if config.MaxAge > 0 {
+				w.Header().Set("Access-Control-Max-Age", fmt.Sprintf("%d", config.MaxAge))
+			}
+
 			if r.Method == "OPTIONS" {
-				w.WriteHeader(http.StatusNoContent)
+				if config.PreflightContinue {
+					next.ServeHTTP(w, r)
+				} else {
+					w.WriteHeader(http.StatusNoContent)
+				}
 				return
 			}
 

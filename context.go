@@ -7,10 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -232,5 +235,124 @@ func (c *Context) SaveFile(file *multipart.FileHeader, path string) error {
 	defer dest.Close()
 
 	_, err = io.Copy(dest, src)
+	return err
+}
+
+// StreamFile streams the content of a file in chunks to the client
+func (c *Context) StreamFile(filepath string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	contentType := mime.TypeByExtension(filepath)
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	rangeHeader := c.GetHeader("Range")
+
+	if rangeHeader == "" {
+		c.SetHeader("Content-Type", contentType)
+		c.SetHeader("Content-Length", strconv.FormatInt(stat.Size(), 10))
+		c.Response.WriteHeader(http.StatusOK)
+		_, err = io.Copy(c.Response, file)
+		return err
+	}
+
+	return c.serveRange(file, stat, rangeHeader, contentType)
+}
+
+// DownloadFile sends a downloadable file response with the specified filename
+func (c *Context) DownloadFile(filepath string, downloadName string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	if downloadName == "" {
+		downloadName = stat.Name()
+	}
+
+	contentType := mime.TypeByExtension(filepath)
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	c.SetHeader("Content-Type", contentType)
+	c.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadName))
+	c.SetHeader("Content-Length", strconv.FormatInt(stat.Size(), 10))
+	c.Response.WriteHeader(http.StatusOK)
+
+	_, err = io.Copy(c.Response, file)
+	return err
+}
+
+func (c *Context) ServeStatic(dir string) error {
+	path := filepath.Join(dir, c.Request.URL.Path)
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		indexPath := filepath.Join(path, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			path = indexPath
+		} else {
+			return os.ErrNotExist
+		}
+	}
+
+	return c.StreamFile(path)
+}
+
+// serveRange determines the exact range of the file content to serve on the current request context
+func (c *Context) serveRange(file *os.File, stat os.FileInfo, rangeHeader, contentType string) error {
+	rangePart := strings.TrimPrefix(rangeHeader, "bytes=")
+	parts := strings.Split(rangePart, "-")
+
+	start, end := int64(0), stat.Size()-1
+	if len(parts) > 0 && parts[0] != "" {
+		start, _ = strconv.ParseInt(parts[0], 10, 64)
+	}
+	if len(parts) > 1 && parts[1] != "" {
+		end, _ = strconv.ParseInt(parts[1], 10, 64)
+	}
+
+	if start > end || start >= stat.Size() {
+		c.SetHeader("Content-Range", fmt.Sprintf("bytes */%d", stat.Size()))
+		c.Response.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+		return nil
+	}
+
+	if end >= stat.Size() {
+		end = stat.Size() - 1
+	}
+
+	contentLength := end - start + 1
+
+	file.Seek(start, io.SeekStart)
+
+	c.SetHeader("Content-Type", contentType)
+	c.SetHeader("Content-Length", strconv.FormatInt(contentLength, 10))
+	c.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, stat.Size()))
+	c.SetHeader("Accept-Ranges", "bytes")
+	c.Response.WriteHeader(http.StatusPartialContent)
+
+	_, err := io.CopyN(c.Response, file, contentLength)
 	return err
 }
