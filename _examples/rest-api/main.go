@@ -8,7 +8,7 @@ import (
 	"github.com/mrshabel/mach"
 )
 
-// data store to hold all todos
+// Store to hold all todos.
 type Store struct {
 	todos   map[int]*Todo
 	counter int
@@ -21,7 +21,7 @@ type Todo struct {
 	Completed bool   `json:"completed"`
 }
 
-// setup data store
+// setup data store.
 var store = &Store{todos: make(map[int]*Todo)}
 
 func main() {
@@ -51,18 +51,23 @@ func getTodos(c *mach.Context) {
 		list = append(list, todo)
 	}
 
-	c.JSON(200, list)
+	err := c.JSON(200, list)
+	if err != nil {
+		return
+	}
 }
 
 func createTodo(c *mach.Context) {
 	var todo Todo
 	if err := c.DecodeJSON(&todo); err != nil {
 		c.JSON(400, map[string]string{"error": "Invalid JSON"})
+
 		return
 	}
 
 	if todo.Title == "" {
 		c.JSON(400, map[string]string{"error": "Title is required"})
+
 		return
 	}
 
@@ -85,6 +90,7 @@ func getTodo(c *mach.Context) {
 	todo, exists := store.todos[id]
 	if !exists {
 		c.JSON(404, map[string]string{"error": "Todo not found"})
+
 		return
 	}
 
@@ -97,6 +103,7 @@ func updateTodo(c *mach.Context) {
 	var updated Todo
 	if err := c.DecodeJSON(&updated); err != nil {
 		c.JSON(400, map[string]string{"error": "Invalid JSON"})
+
 		return
 	}
 
@@ -106,6 +113,7 @@ func updateTodo(c *mach.Context) {
 	todo, exists := store.todos[id]
 	if !exists {
 		c.JSON(404, map[string]string{"error": "Todo not found"})
+
 		return
 	}
 
@@ -125,6 +133,7 @@ func deleteTodo(c *mach.Context) {
 
 	if _, exists := store.todos[id]; !exists {
 		c.JSON(404, map[string]string{"error": "Todo not found"})
+
 		return
 	}
 
@@ -134,5 +143,6 @@ func deleteTodo(c *mach.Context) {
 
 func parseID(s string) int {
 	id, _ := strconv.Atoi(s)
+
 	return id
 }

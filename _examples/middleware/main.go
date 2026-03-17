@@ -20,23 +20,32 @@ func main() {
 
 	// public routes
 	app.GET("/", func(c *mach.Context) {
-		c.JSON(200, map[string]string{
+		err := c.JSON(200, map[string]string{
 			"message": "Welcome to the API",
 		})
+		if err != nil {
+			return
+		}
 	})
 
 	// API routes with CORS
 	api := app.Group("/api", mach.CORS([]string{"*"}))
 	{
 		api.GET("/health", func(c *mach.Context) {
-			c.JSON(200, map[string]string{"status": "healthy"})
+			err := c.JSON(200, map[string]string{"status": "healthy"})
+			if err != nil {
+				return
+			}
 		})
 
 		api.GET("/products", func(c *mach.Context) {
-			c.JSON(200, []map[string]interface{}{
+			err := c.JSON(200, []map[string]interface{}{
 				{"id": 1, "name": "Product 1"},
 				{"id": 2, "name": "Product 2"},
 			})
+			if err != nil {
+				return
+			}
 		})
 	}
 
@@ -48,7 +57,7 @@ func main() {
 	log.Fatal(app.Run("localhost:8000"))
 }
 
-// APIVersionMiddleware adds an API version header to all responses
+// APIVersionMiddleware adds an API version header to all responses.
 func APIVersionMiddleware(version string) mach.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +69,7 @@ func APIVersionMiddleware(version string) mach.MiddlewareFunc {
 	}
 }
 
-// Optional: Simple logging middleware example
+// SimpleLogger middleware example : Optional.
 func SimpleLogger() mach.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +82,7 @@ func SimpleLogger() mach.MiddlewareFunc {
 	}
 }
 
-// Optional: Content-Type enforcement middleware
+// RequireJSON Optional: Content-Type enforcement middleware.
 func RequireJSON() mach.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +91,7 @@ func RequireJSON() mach.MiddlewareFunc {
 				contentType := r.Header.Get("Content-Type")
 				if !strings.Contains(contentType, "application/json") {
 					http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
+
 					return
 				}
 			}

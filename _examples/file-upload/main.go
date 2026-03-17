@@ -51,6 +51,7 @@ func main() {
 		file, err := c.File("file")
 		if err != nil {
 			c.JSON(400, map[string]string{"error": "No file uploaded"})
+
 			return
 		}
 
@@ -62,6 +63,7 @@ func main() {
 		// save file
 		if err := c.SaveFile(file, dst); err != nil {
 			c.JSON(500, map[string]string{"error": "Failed to save file"})
+
 			return
 		}
 

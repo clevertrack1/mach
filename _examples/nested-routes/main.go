@@ -11,18 +11,20 @@ func main() {
 
 	// home
 	app.GET("/", func(c *mach.Context) {
-		c.JSON(200, map[string]string{
+		err := c.JSON(200, map[string]string{
 			"message": "API with nested route groups",
 			"docs":    "/api/v1/docs",
 		})
+		if err != nil {
+			log.Fatalf("failed to respond with home page: %v", err)
+		}
 	})
 
 	// API v1
 	v1 := app.Group("/api/v1", mach.CORS([]string{"*"}))
 	{
 		v1.GET("/docs", func(c *mach.Context) {
-			c.JSON(200, map[string]interface{}{
-				"version": "1.0.0",
+			c.JSON(200, map[string]interface{}{"version": "1.0.0",
 				"endpoints": map[string][]string{
 					"public": {"/api/v1/health", "/api/v1/docs"},
 					"users":  {"/api/v1/users", "/api/v1/users/{id}"},
@@ -56,7 +58,6 @@ func main() {
 			posts.GET("", listPosts)
 			posts.GET("/{id}", getPost)
 		}
-
 	}
 
 	log.Println("Server at http://localhost:8000")
@@ -88,6 +89,7 @@ func createUser(c *mach.Context) {
 	var user map[string]string
 	if err := c.DecodeJSON(&user); err != nil {
 		c.JSON(400, map[string]string{"error": "Invalid JSON"})
+
 		return
 	}
 	c.JSON(201, user)
@@ -106,6 +108,7 @@ func createUserPost(c *mach.Context) {
 	var post map[string]string
 	if err := c.DecodeJSON(&post); err != nil {
 		c.JSON(400, map[string]string{"error": "Invalid JSON"})
+
 		return
 	}
 	post["user_id"] = userID
