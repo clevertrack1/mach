@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mrshabel/mach"
+	"github.com/clevertrack1/mach"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/mrshabel/mach"
+	"github.com/clevertrack1/mach"
 )
 
 func main() {

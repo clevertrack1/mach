@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mrshabel/mach"
+	"github.com/clevertrack1/mach"
 )
 
 func TestRequestID(t *testing.T) {
