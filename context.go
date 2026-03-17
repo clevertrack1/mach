@@ -21,7 +21,7 @@ var (
 	ErrEmptyRequestBody = errors.New("request body is empty")
 )
 
-// Context adds helpful methods to the ongoing request
+// Context adds helpful methods to the ongoing request.
 type Context struct {
 	Request  *http.Request
 	Response http.ResponseWriter
@@ -33,7 +33,7 @@ type Context struct {
 	IsFormParsed bool
 }
 
-// reset prepares a context to be reused by a new request
+// reset prepares a context to be reused by a new request.
 func (ctx *Context) reset(w http.ResponseWriter, r *http.Request) {
 	ctx.Response = w
 	ctx.Request = r
@@ -42,24 +42,24 @@ func (ctx *Context) reset(w http.ResponseWriter, r *http.Request) {
 }
 
 // Param gets a path parameter by name.
-// For example, this returns the value of id from /users/{id}
-func (c *Context) Param(name string) string {
-	return c.Request.PathValue(name)
+// For example, this returns the value of id from /users/{id}.
+func (ctx *Context) Param(name string) string {
+	return ctx.Request.PathValue(name)
 }
 
-// Query returns a named query parameter
-func (c *Context) Query(name string) string {
+// Query returns a named query parameter.
+func (ctx *Context) Query(name string) string {
 	// extract all query parameters once
-	if c.query == nil {
-		c.query = c.Request.URL.Query()
+	if ctx.query == nil {
+		ctx.query = ctx.Request.URL.Query()
 	}
 
-	return c.query.Get(name)
+	return ctx.query.Get(name)
 }
 
-// DefaultQuery gets query param with default value
-func (c *Context) DefaultQuery(name, defaultValue string) string {
-	val := c.Query(name)
+// DefaultQuery gets query param with default value.
+func (ctx *Context) DefaultQuery(name, defaultValue string) string {
+	val := ctx.Query(name)
 	if val == "" {
 		return defaultValue
 	}
@@ -67,160 +67,170 @@ func (c *Context) DefaultQuery(name, defaultValue string) string {
 	return val
 }
 
-// Form gets a form value
-func (c *Context) Form(name string) string {
+// Form gets a form value.
+func (ctx *Context) Form(name string) string {
 	// parse form values only once. its values cached by default once parsed
-	if !c.IsFormParsed {
-		c.Request.ParseForm()
-		c.IsFormParsed = true
+	if !ctx.IsFormParsed {
+		err := ctx.Request.ParseForm()
+		if err != nil {
+			return ""
+		}
+
+		ctx.IsFormParsed = true
 	}
 
-	return c.Request.FormValue(name)
+	return ctx.Request.FormValue(name)
 }
 
-// File gets an uploaded file by key name. The file header containing the file is returned
-func (c *Context) File(name string) (*multipart.FileHeader, error) {
-	_, header, err := c.Request.FormFile(name)
+// File gets an uploaded file by key name. The file header containing the file is returned.
+func (ctx *Context) File(name string) (*multipart.FileHeader, error) {
+	_, header, err := ctx.Request.FormFile(name)
+
 	return header, err
 }
 
-// Cookie gets a request cookie by name
-func (c *Context) Cookie(name string) (*http.Cookie, error) {
-	return c.Request.Cookie(name)
+// Cookie gets a request cookie by name.
+func (ctx *Context) Cookie(name string) (*http.Cookie, error) {
+	return ctx.Request.Cookie(name)
 }
 
-// GetHeader retrieves a request header by key
-func (c *Context) GetHeader(key string) string {
-	return c.Request.Header.Get(key)
+// GetHeader retrieves a request header by key.
+func (ctx *Context) GetHeader(key string) string {
+	return ctx.Request.Header.Get(key)
 }
 
-// Method returns the request method
-func (c *Context) Method() string {
-	return c.Request.Method
+// Method returns the request method.
+func (ctx *Context) Method() string {
+	return ctx.Request.Method
 }
 
-// Path retrieves the request path
-func (c *Context) Path() string {
-	return c.Request.URL.Path
+// Path retrieves the request path.
+func (ctx *Context) Path() string {
+	return ctx.Request.URL.Path
 }
 
 // ClientIP returns the client IP address.
 // Use this if you trust request headers passed to the server (ie: reverse proxy sits before server)
-// else use c.Request.RemoteAddr()
-func (c *Context) ClientIP() string {
-	if forwarded := c.Request.Header.Get("X-Forwarded-For"); forwarded != "" {
+// else use c.Request.RemoteAddr().
+func (ctx *Context) ClientIP() string {
+	if forwarded := ctx.Request.Header.Get("X-Forwarded-For"); forwarded != "" {
 		ips := strings.Split(forwarded, ",")
+
 		return strings.TrimSpace(ips[0])
 	}
-	if realIP := c.Request.Header.Get("X-Real-IP"); realIP != "" {
+
+	if realIP := ctx.Request.Header.Get("X-Real-IP"); realIP != "" {
 		return realIP
 	}
 
-	ip := c.Request.RemoteAddr
+	ip := ctx.Request.RemoteAddr
 	if parts := strings.Split(ip, ":"); len(parts) > 1 {
 		ip = parts[0]
 	}
+
 	return ip
 }
 
-// Body reads the request body
-func (c *Context) Body() ([]byte, error) {
-	return io.ReadAll(c.Request.Body)
+// Body reads the request body.
+func (ctx *Context) Body() ([]byte, error) {
+	return io.ReadAll(ctx.Request.Body)
 }
 
-// Context returns the request original context from context.Context
-func (c *Context) Context() context.Context {
-	return c.Request.Context()
+// Context returns the request original context from context.Context.
+func (ctx *Context) Context() context.Context {
+	return ctx.Request.Context()
 }
 
 // binding methods
 
-// DecodeJSON decodes a request body into a struct
-func (c *Context) DecodeJSON(data interface{}) error {
-	if c.Request.Body == nil {
+// DecodeJSON decodes a request body into a struct.
+func (ctx *Context) DecodeJSON(data interface{}) error {
+	if ctx.Request.Body == nil {
 		return ErrEmptyRequestBody
 	}
 
-	return json.NewDecoder(c.Request.Body).Decode(data)
+	return json.NewDecoder(ctx.Request.Body).Decode(data)
 }
 
-// DecodeXML decodes a request body into a struct
-func (c *Context) DecodeXML(data interface{}) error {
-	if c.Request.Body == nil {
+// DecodeXML decodes a request body into a struct.
+func (ctx *Context) DecodeXML(data interface{}) error {
+	if ctx.Request.Body == nil {
 		return ErrEmptyRequestBody
 	}
 
-	return xml.NewDecoder(c.Request.Body).Decode(data)
+	return xml.NewDecoder(ctx.Request.Body).Decode(data)
 }
 
 // response methods
 
-// JSON sends a JSON response
-func (c *Context) JSON(status int, data interface{}) error {
-	c.Response.Header().Set("Content-Type", "application/json")
-	c.Response.WriteHeader(status)
+// JSON sends a JSON response.
+func (ctx *Context) JSON(status int, data interface{}) error {
+	ctx.Response.Header().Set("Content-Type", "application/json")
+	ctx.Response.WriteHeader(status)
 
-	return json.NewEncoder(c.Response).Encode(data)
+	return json.NewEncoder(ctx.Response).Encode(data)
 }
 
-// XML sends an XML response
-func (c *Context) XML(status int, data interface{}) error {
-	c.SetHeader("Content-Type", "application/xml")
-	c.Response.WriteHeader(status)
+// XML sends an XML response.
+func (ctx *Context) XML(status int, data interface{}) error {
+	ctx.SetHeader("Content-Type", "application/xml")
+	ctx.Response.WriteHeader(status)
 
-	return xml.NewEncoder(c.Response).Encode(data)
+	return xml.NewEncoder(ctx.Response).Encode(data)
 }
 
-// Text sends a plain text response
-func (c *Context) Text(status int, format string, values ...interface{}) error {
-	c.SetHeader("Content-Type", "text/plain; charset=utf-8")
-	c.Response.WriteHeader(status)
+// Text sends a plain text response.
+func (ctx *Context) Text(status int, format string, values ...interface{}) error {
+	ctx.SetHeader("Content-Type", "text/plain; charset=utf-8")
+	ctx.Response.WriteHeader(status)
 
-	_, err := fmt.Fprintf(c.Response, format, values...)
+	_, err := fmt.Fprintf(ctx.Response, format, values...)
 
 	return err
 }
-func (c *Context) HTML(status int, html string) error {
-	c.SetHeader("Content-Type", "text/html; charset=utf-8")
-	c.Response.WriteHeader(status)
+func (ctx *Context) HTML(status int, html string) error {
+	ctx.SetHeader("Content-Type", "text/html; charset=utf-8")
+	ctx.Response.WriteHeader(status)
 
-	_, err := c.Response.Write([]byte(html))
+	_, err := ctx.Response.Write([]byte(html))
+
 	return err
 }
 
-// Data sends raw bytes
-func (c *Context) Data(status int, contentType string, data []byte) error {
-	c.SetHeader("Content-Type", contentType)
-	c.Response.WriteHeader(status)
+// Data sends raw bytes.
+func (ctx *Context) Data(status int, contentType string, data []byte) error {
+	ctx.SetHeader("Content-Type", contentType)
+	ctx.Response.WriteHeader(status)
 
-	_, err := c.Response.Write(data)
+	_, err := ctx.Response.Write(data)
+
 	return err
 }
 
-// NoContent sends a response with no body
-func (c *Context) NoContent(status int) {
-	c.Response.WriteHeader(status)
+// NoContent sends a response with no body.
+func (ctx *Context) NoContent(status int) {
+	ctx.Response.WriteHeader(status)
 }
 
-// SetHeader sets a response header
-func (c *Context) SetHeader(key, value string) {
-	c.Response.Header().Set(key, value)
+// SetHeader sets a response header.
+func (ctx *Context) SetHeader(key, value string) {
+	ctx.Response.Header().Set(key, value)
 }
 
-// SetCookie sets a response cookie
-func (c *Context) SetCookie(cookie *http.Cookie) {
-	http.SetCookie(c.Response, cookie)
+// SetCookie sets a response cookie.
+func (ctx *Context) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(ctx.Response, cookie)
 }
 
-// Redirect redirects to a URL
-func (c *Context) Redirect(status int, url string) {
-	http.Redirect(c.Response, c.Request, url, status)
+// Redirect redirects to a URL.
+func (ctx *Context) Redirect(status int, url string) {
+	http.Redirect(ctx.Response, ctx.Request, url, status)
 }
 
 // utilities
 
 // SaveFile saves an uploaded file to the specified destination path.
-func (c *Context) SaveFile(file *multipart.FileHeader, path string) error {
+func (ctx *Context) SaveFile(file *multipart.FileHeader, path string) error {
 	// copy file to destination
 	src, err := file.Open()
 	if err != nil {
@@ -235,11 +245,12 @@ func (c *Context) SaveFile(file *multipart.FileHeader, path string) error {
 	defer dest.Close()
 
 	_, err = io.Copy(dest, src)
+
 	return err
 }
 
-// StreamFile streams the content of a file in chunks to the client
-func (c *Context) StreamFile(filepath string) error {
+// StreamFile streams the content of a file in chunks to the client.
+func (ctx *Context) StreamFile(filepath string) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return err
@@ -256,21 +267,22 @@ func (c *Context) StreamFile(filepath string) error {
 		contentType = "application/octet-stream"
 	}
 
-	rangeHeader := c.GetHeader("Range")
+	rangeHeader := ctx.GetHeader("Range")
 
 	if rangeHeader == "" {
-		c.SetHeader("Content-Type", contentType)
-		c.SetHeader("Content-Length", strconv.FormatInt(stat.Size(), 10))
-		c.Response.WriteHeader(http.StatusOK)
-		_, err = io.Copy(c.Response, file)
+		ctx.SetHeader("Content-Type", contentType)
+		ctx.SetHeader("Content-Length", strconv.FormatInt(stat.Size(), 10))
+		ctx.Response.WriteHeader(http.StatusOK)
+		_, err = io.Copy(ctx.Response, file)
+
 		return err
 	}
 
-	return c.serveRange(file, stat, rangeHeader, contentType)
+	return ctx.serveRange(file, stat, rangeHeader, contentType)
 }
 
-// DownloadFile sends a downloadable file response with the specified filename
-func (c *Context) DownloadFile(filepath string, downloadName string) error {
+// DownloadFile sends a downloadable file response with the specified filename.
+func (ctx *Context) DownloadFile(filepath string, downloadName string) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return err
@@ -291,17 +303,18 @@ func (c *Context) DownloadFile(filepath string, downloadName string) error {
 		contentType = "application/octet-stream"
 	}
 
-	c.SetHeader("Content-Type", contentType)
-	c.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadName))
-	c.SetHeader("Content-Length", strconv.FormatInt(stat.Size(), 10))
-	c.Response.WriteHeader(http.StatusOK)
+	ctx.SetHeader("Content-Type", contentType)
+	ctx.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadName))
+	ctx.SetHeader("Content-Length", strconv.FormatInt(stat.Size(), 10))
+	ctx.Response.WriteHeader(http.StatusOK)
 
-	_, err = io.Copy(c.Response, file)
+	_, err = io.Copy(ctx.Response, file)
+
 	return err
 }
 
-func (c *Context) ServeStatic(dir string) error {
-	path := filepath.Join(dir, c.Request.URL.Path)
+func (ctx *Context) ServeStatic(dir string) error {
+	path := filepath.Join(dir, ctx.Request.URL.Path)
 
 	info, err := os.Stat(path)
 	if err != nil {
@@ -317,11 +330,11 @@ func (c *Context) ServeStatic(dir string) error {
 		}
 	}
 
-	return c.StreamFile(path)
+	return ctx.StreamFile(path)
 }
 
-// serveRange determines the exact range of the file content to serve on the current request context
-func (c *Context) serveRange(file *os.File, stat os.FileInfo, rangeHeader, contentType string) error {
+// serveRange determines the exact range of the file content to serve on the current request context.
+func (ctx *Context) serveRange(file *os.File, stat os.FileInfo, rangeHeader, contentType string) error {
 	rangePart := strings.TrimPrefix(rangeHeader, "bytes=")
 	parts := strings.Split(rangePart, "-")
 
@@ -329,13 +342,15 @@ func (c *Context) serveRange(file *os.File, stat os.FileInfo, rangeHeader, conte
 	if len(parts) > 0 && parts[0] != "" {
 		start, _ = strconv.ParseInt(parts[0], 10, 64)
 	}
+
 	if len(parts) > 1 && parts[1] != "" {
 		end, _ = strconv.ParseInt(parts[1], 10, 64)
 	}
 
 	if start > end || start >= stat.Size() {
-		c.SetHeader("Content-Range", fmt.Sprintf("bytes */%d", stat.Size()))
-		c.Response.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+		ctx.SetHeader("Content-Range", fmt.Sprintf("bytes */%d", stat.Size()))
+		ctx.Response.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+
 		return nil
 	}
 
@@ -345,14 +360,18 @@ func (c *Context) serveRange(file *os.File, stat os.FileInfo, rangeHeader, conte
 
 	contentLength := end - start + 1
 
-	file.Seek(start, io.SeekStart)
+	_, err := file.Seek(start, io.SeekStart)
+	if err != nil {
+		return err
+	}
 
-	c.SetHeader("Content-Type", contentType)
-	c.SetHeader("Content-Length", strconv.FormatInt(contentLength, 10))
-	c.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, stat.Size()))
-	c.SetHeader("Accept-Ranges", "bytes")
-	c.Response.WriteHeader(http.StatusPartialContent)
+	ctx.SetHeader("Content-Type", contentType)
+	ctx.SetHeader("Content-Length", strconv.FormatInt(contentLength, 10))
+	ctx.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, stat.Size()))
+	ctx.SetHeader("Accept-Ranges", "bytes")
+	ctx.Response.WriteHeader(http.StatusPartialContent)
 
-	_, err := io.CopyN(c.Response, file, contentLength)
+	_, err = io.CopyN(ctx.Response, file, contentLength)
+
 	return err
 }

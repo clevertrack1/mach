@@ -8,19 +8,20 @@ import (
 
 func Gzip() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		return http.HandlerFunc(func(response http.ResponseWriter, httpReq *http.Request) {
 			// proceed to next handler if request body can't be compressed
-			if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-				next.ServeHTTP(w, r)
+			if !strings.Contains(httpReq.Header.Get("Accept-Encoding"), "gzip") {
+				next.ServeHTTP(response, httpReq)
+
 				return
 			}
 
-			w.Header().Set("Vary", "Accept-Encoding")
+			response.Header().Set("Vary", "Accept-Encoding")
 
-			gw := &gzipWriter{ResponseWriter: w}
+			gw := &gzipWriter{ResponseWriter: response}
 			gw.Header().Set("Content-Encoding", "gzip")
 
-			next.ServeHTTP(gw, r)
+			next.ServeHTTP(gw, httpReq)
 		})
 	}
 }
@@ -36,6 +37,7 @@ func (gw *gzipWriter) Write(data []byte) (int, error) {
 	}
 
 	gw.written = true
+
 	if len(data) == 0 {
 		return 0, nil
 	}
