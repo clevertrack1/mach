@@ -11,6 +11,7 @@ Mach is a minimalist web framework for Go, inspired by Python's Bottle. My motiv
 
 - **Middleware chain** - Global and route-specific middlewares
 - **Route groups** - Organize routes with common prefixes and middleware
+- **HTMX support** - Built-in helpers for HTMX request and response headers
 - **Flexible configuration** - Functional options for app and server setup
 - **Graceful shutdown** - Built-in support for clean server termination
 - **Zero dependencies** - Core framework uses only the standard library
@@ -64,6 +65,31 @@ func main() {
 
     app.Run(":8080")
 }
+```
+
+### HTMX Support
+
+Mach provides built-in helpers for working with HTMX.
+
+```go
+app.GET("/htmx-example", func(c *mach.Context) {
+    h := c.HTMX()
+    
+    // check request headers
+    if h.IsHTMX() {
+        fmt.Println("HTMX request from:", h.CurrentURL())
+        fmt.Println("Target element:", h.Target())
+    }
+
+    // set response headers
+    h.PushURL("/new-url")
+    h.TriggerResponse("my-event")
+    
+    // you can also pass objects for complex events
+    h.TriggerResponse(map[string]string{"user-updated": "123"})
+    
+    c.HTML(200, "<div>Updated Content</div>")
+})
 ```
 
 ## Examples
