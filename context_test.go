@@ -9,7 +9,10 @@ import (
 func TestContext_Query(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "%s", c.Query("key"))
+		err := c.Text(200, "%s", c.Query("key"))
+		if err != nil {
+			return
+		}
 	})
 
 	req := newRequest(http.MethodGet, "/test?key=value")
@@ -23,7 +26,10 @@ func TestContext_Query(t *testing.T) {
 func TestContext_Param(t *testing.T) {
 	app := New()
 	app.GET("/users/{id}/posts/{postId}", func(c *Context) {
-		c.Text(200, "%s-%s", c.Param("id"), c.Param("postId"))
+		err := c.Text(200, "%s-%s", c.Param("id"), c.Param("postId"))
+		if err != nil {
+			return
+		}
 	})
 
 	req := newRequest(http.MethodGet, "/users/123/posts/456")
@@ -37,7 +43,10 @@ func TestContext_Param(t *testing.T) {
 func TestContext_GetHeader(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "%s", c.GetHeader("X-Custom"))
+		err := c.Text(200, "%s", c.GetHeader("X-Custom"))
+		if err != nil {
+			return
+		}
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -52,14 +61,21 @@ func TestContext_GetHeader(t *testing.T) {
 func TestContext_JSON(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
-		c.JSON(200, map[string]string{"message": "hello"})
+		err := c.JSON(200, map[string]string{"message": "hello"})
+		if err != nil {
+			return
+		}
 	})
 
 	req := newRequest(http.MethodGet, "/test")
 	res := serve(app, req)
 
 	var got map[string]string
-	json.Unmarshal(res.Body.Bytes(), &got)
+	err := json.Unmarshal(res.Body.Bytes(), &got)
+	if err != nil {
+		return
+	}
+
 	if got["message"] != "hello" {
 		t.Errorf("got %v, want hello", got)
 	}
@@ -68,7 +84,10 @@ func TestContext_JSON(t *testing.T) {
 func TestContext_Text(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "Hello %s", "World")
+		err := c.Text(200, "Hello %s", "World")
+		if err != nil {
+			return
+		}
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -97,7 +116,10 @@ func TestContext_SetCookie(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
 		c.SetCookie(&http.Cookie{Name: "session", Value: "abc"})
-		c.Text(200, "ok")
+		err := c.Text(200, "ok")
+		if err != nil {
+			return
+		}
 	})
 
 	req := newRequest(http.MethodGet, "/test")

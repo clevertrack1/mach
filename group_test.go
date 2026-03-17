@@ -10,7 +10,10 @@ func TestGroup_Basic(t *testing.T) {
 	group := app.Group("/api")
 
 	group.GET("/users", func(c *Context) {
-		c.Text(200, "users")
+		err := c.Text(200, "users")
+		if err != nil {
+			return
+		}
 	})
 
 	req := newRequest(http.MethodGet, "/api/users")
@@ -27,7 +30,10 @@ func TestGroup_Nested(t *testing.T) {
 	users := api.Group("/users")
 
 	users.GET("/{id}/posts", func(c *Context) {
-		c.Text(200, "posts for %s", c.Param("id"))
+		err := c.Text(200, "posts for %s", c.Param("id"))
+		if err != nil {
+			return
+		}
 	})
 
 	req := newRequest(http.MethodGet, "/api/users/123/posts")

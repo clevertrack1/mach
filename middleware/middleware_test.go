@@ -12,7 +12,10 @@ func TestRequestID(t *testing.T) {
 	app := mach.New()
 	app.Use(RequestID())
 	app.GET("/test", func(c *mach.Context) {
-		c.Text(200, "ok")
+		err := c.Text(200, "ok")
+		if err != nil {
+			return
+		}
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -28,7 +31,10 @@ func TestRequestID_UseExisting(t *testing.T) {
 	app := mach.New()
 	app.Use(RequestID())
 	app.GET("/test", func(c *mach.Context) {
-		c.Text(200, "ok")
+		err := c.Text(200, "ok")
+		if err != nil {
+			return
+		}
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -45,7 +51,10 @@ func TestGzip(t *testing.T) {
 	app := mach.New()
 	app.Use(Gzip())
 	app.GET("/test", func(c *mach.Context) {
-		c.Text(200, "hello world")
+		err := c.Text(200, "hello world")
+		if err != nil {
+			return
+		}
 	})
 
 	t.Run("with gzip accept", func(t *testing.T) {

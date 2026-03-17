@@ -9,7 +9,10 @@ func TestLogger(t *testing.T) {
 	app := New()
 	app.Use(Logger())
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "ok")
+		err := c.Text(200, "ok")
+		if err != nil {
+			return
+		}
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -97,7 +100,10 @@ func TestCORS(t *testing.T) {
 			app := New()
 			app.Use(CORSWithConfig(tt.config))
 			app.GET("/test", func(c *Context) {
-				c.Text(200, "ok")
+				err := c.Text(200, "ok")
+				if err != nil {
+					return
+				}
 			})
 
 			req := newRequest(http.MethodGet, "/test")
