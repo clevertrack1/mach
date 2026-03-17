@@ -2,7 +2,7 @@ package mach
 
 import "net/http"
 
-// Group is a route group with common named prefix
+// Group is a route group with common named prefix.
 type Group struct {
 	prefix      string
 	middlewares []MiddlewareFunc
@@ -10,12 +10,12 @@ type Group struct {
 	app *App
 }
 
-// Use registers middlewares to the group
+// Use registers middlewares to the group.
 func (g *Group) Use(middlewares ...MiddlewareFunc) {
 	g.middlewares = append(g.middlewares, middlewares...)
 }
 
-// Group creates a sub-group. Global middlewares come first in the chain
+// Group creates a sub-group. Global middlewares come first in the chain.
 func (g *Group) Group(prefix string, middlewares ...MiddlewareFunc) *Group {
 	// copy all applicable middlewares
 	return &Group{
@@ -31,6 +31,7 @@ func (g *Group) handle(method, path string, handler HandlerFunc) {
 
 	if len(g.middlewares) == 0 {
 		g.app.handle(method, path, handler)
+
 		return
 	}
 
@@ -53,37 +54,37 @@ func (g *Group) handle(method, path string, handler HandlerFunc) {
 	g.app.router.Handle(pattern, wrappedHandler)
 }
 
-// GET registers a GET route for the group
+// GET registers a GET route for the group.
 func (g *Group) GET(path string, handler HandlerFunc) {
 	g.handle(http.MethodGet, path, handler)
 }
 
-// POST registers a POST route for the group
+// POST registers a POST route for the group.
 func (g *Group) POST(path string, handler HandlerFunc) {
 	g.handle(http.MethodPost, path, handler)
 }
 
-// PATCH registers a PATCH route for the group
+// PATCH registers a PATCH route for the group.
 func (g *Group) PATCH(path string, handler HandlerFunc) {
 	g.handle(http.MethodPatch, path, handler)
 }
 
-// PUT registers a PUT route for the group
+// PUT registers a PUT route for the group.
 func (g *Group) PUT(path string, handler HandlerFunc) {
 	g.handle(http.MethodPut, path, handler)
 }
 
-// DELETE registers a DELETE route for the group
+// DELETE registers a DELETE route for the group.
 func (g *Group) DELETE(path string, handler HandlerFunc) {
 	g.handle(http.MethodDelete, path, handler)
 }
 
-// HEAD registers a HEAD route for the group
+// HEAD registers a HEAD route for the group.
 func (g *Group) HEAD(path string, handler HandlerFunc) {
 	g.handle(http.MethodHead, path, handler)
 }
 
-// OPTIONS registers a OPTIONS route for the group
+// OPTIONS registers a OPTIONS route for the group.
 func (g *Group) OPTIONS(path string, handler HandlerFunc) {
 	g.handle(http.MethodOptions, path, handler)
 }

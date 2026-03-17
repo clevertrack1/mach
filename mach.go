@@ -33,7 +33,7 @@ import (
 	"time"
 )
 
-// App is the main application instance
+// App is the main application instance.
 type App struct {
 	router      *http.ServeMux
 	middlewares []MiddlewareFunc
@@ -43,16 +43,16 @@ type App struct {
 	debug bool
 }
 
-// HandlerFunc is the handler signature
+// HandlerFunc is the handler signature.
 type HandlerFunc func(c *Context)
 
-// MiddlewareFunc is the middleware signature
+// MiddlewareFunc is the middleware signature.
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// Option configures the app
+// Option configures the app.
 type Option func(*App)
 
-// RunOption configures the server
+// RunOption configures the server.
 type RunOption func(*serverConfig)
 
 type serverConfig struct {
@@ -61,7 +61,7 @@ type serverConfig struct {
 	gracefulTimeout time.Duration
 }
 
-// New instantiates a new app instance
+// New instantiates a new app instance.
 func New(opts ...Option) *App {
 	app := &App{
 		router: http.NewServeMux(),
@@ -81,7 +81,7 @@ func New(opts ...Option) *App {
 	return app
 }
 
-// Default instantiates an app with common settings
+// Default instantiates an app with common settings.
 func Default() *App {
 	app := New()
 	app.Use(Logger())
@@ -92,21 +92,21 @@ func Default() *App {
 
 // app configuration
 
-// WithLogger adds logger middleware
+// WithLogger adds logger middleware.
 func WithLogger() Option {
 	return func(app *App) {
 		app.Use(Logger())
 	}
 }
 
-// WithRecovery adds recovery middleware
+// WithRecovery adds recovery middleware.
 func WithRecovery() Option {
 	return func(app *App) {
 		app.Use(Recovery())
 	}
 }
 
-// WithDebug enables debug mode
+// WithDebug enables debug mode.
 func WithDebug() Option {
 	return func(app *App) {
 		app.debug = true
@@ -115,13 +115,13 @@ func WithDebug() Option {
 
 // app core methods
 
-// ServeHTTP implements the handler for serving each request
+// ServeHTTP implements the handler for serving each request.
 func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler := app.buildHandler()
 	handler.ServeHTTP(w, r)
 }
 
-// buildHandler creates the middleware chain
+// buildHandler creates the middleware chain.
 func (app *App) buildHandler() http.Handler {
 	handler := http.Handler(app.router)
 
@@ -133,12 +133,12 @@ func (app *App) buildHandler() http.Handler {
 	return handler
 }
 
-// Use adds a global middleware to the application
+// Use adds a global middleware to the application.
 func (app *App) Use(middlewares ...MiddlewareFunc) {
 	app.middlewares = append(app.middlewares, middlewares...)
 }
 
-// internal routing method to fit the http.Handler method signature
+// internal routing method to fit the http.Handler method signature.
 func (app *App) handle(method, path string, handler HandlerFunc) {
 	// std lib pattern is space delimiter of method and path
 	pattern := method + " " + path
@@ -154,42 +154,42 @@ func (app *App) handle(method, path string, handler HandlerFunc) {
 
 // routing methods
 
-// Route registers a handler for the given method and path
+// Route registers a handler for the given method and path.
 func (app *App) Route(method, path string, handler HandlerFunc) {
 	app.handle(method, path, handler)
 }
 
-// GET registers a GET route
+// GET registers a GET route.
 func (app *App) GET(path string, handler HandlerFunc) {
 	app.handle(http.MethodGet, path, handler)
 }
 
-// POST registers a POST route
+// POST registers a POST route.
 func (app *App) POST(path string, handler HandlerFunc) {
 	app.handle(http.MethodPost, path, handler)
 }
 
-// PATCH registers a PATCH route
+// PATCH registers a PATCH route.
 func (app *App) PATCH(path string, handler HandlerFunc) {
 	app.handle(http.MethodPatch, path, handler)
 }
 
-// PUT registers a PUT route
+// PUT registers a PUT route.
 func (app *App) PUT(path string, handler HandlerFunc) {
 	app.handle(http.MethodPut, path, handler)
 }
 
-// DELETE registers a DELETE route
+// DELETE registers a DELETE route.
 func (app *App) DELETE(path string, handler HandlerFunc) {
 	app.handle(http.MethodDelete, path, handler)
 }
 
-// HEAD registers a HEAD route
+// HEAD registers a HEAD route.
 func (app *App) HEAD(path string, handler HandlerFunc) {
 	app.handle(http.MethodHead, path, handler)
 }
 
-// OPTIONS registers a OPTIONS route
+// OPTIONS registers a OPTIONS route.
 func (app *App) OPTIONS(path string, handler HandlerFunc) {
 	app.handle(http.MethodOptions, path, handler)
 }
@@ -200,7 +200,7 @@ func (app *App) Static(prefix, dir string) {
 	app.router.Handle("GET "+strippedPrefix+"/{path...}", http.StripPrefix(strippedPrefix+"/", fileServer))
 }
 
-// Group creates a route group with common prefix and middleware
+// Group creates a route group with common prefix and middleware.
 func (app *App) Group(prefix string, middlewares ...MiddlewareFunc) *Group {
 	return &Group{
 		prefix:      prefix,
@@ -211,21 +211,21 @@ func (app *App) Group(prefix string, middlewares ...MiddlewareFunc) *Group {
 
 // run options
 
-// WithReadTimeout sets the server read timeout
+// WithReadTimeout sets the server read timeout.
 func WithReadTimeout(duration time.Duration) RunOption {
 	return func(cfg *serverConfig) {
 		cfg.readTimeout = duration
 	}
 }
 
-// WithReadTimeout sets the server write timeout
+// WithWriteTimeout sets the server write timeout.
 func WithWriteTimeout(duration time.Duration) RunOption {
 	return func(cfg *serverConfig) {
 		cfg.writeTimeout = duration
 	}
 }
 
-// WithReadTimeout sets the server graceful shutdown timeout
+// WithGracefulShutdown sets the server graceful shutdown timeout.
 func WithGracefulShutdown(timeout time.Duration) RunOption {
 	return func(cfg *serverConfig) {
 		cfg.gracefulTimeout = timeout
@@ -234,7 +234,7 @@ func WithGracefulShutdown(timeout time.Duration) RunOption {
 
 // server methods
 
-// Run starts the http server
+// Run starts the http server.
 func (app *App) Run(addr string, opts ...RunOption) error {
 	cfg := &serverConfig{
 		readTimeout:     30 * time.Second,
@@ -259,10 +259,11 @@ func (app *App) Run(addr string, opts ...RunOption) error {
 	}
 
 	app.logger.Printf("Server started on %s", addr)
+
 	return server.ListenAndServe()
 }
 
-// RunTLS starts the HTTPS server
+// RunTLS starts the HTTPS server.
 func (app *App) RunTLS(addr, certFile, keyFile string, opts ...RunOption) error {
 	cfg := &serverConfig{
 		readTimeout:  30 * time.Second,
@@ -282,6 +283,7 @@ func (app *App) RunTLS(addr, certFile, keyFile string, opts ...RunOption) error 
 	}
 
 	app.logger.Printf("Server started on %s", addr)
+
 	return server.ListenAndServeTLS(certFile, keyFile)
 }
 
@@ -289,7 +291,7 @@ func (app *App) runWithGracefulShutdown(server *http.Server, timeout time.Durati
 	errChan := make(chan error, 1)
 
 	// run non blocking server
-	go func(addr string) {
+	go func(_ string) {
 		app.logger.Printf("Server started on %s with graceful shutdown", server.Addr)
 		// send error reports
 		errChan <- server.ListenAndServe()
@@ -315,6 +317,7 @@ func (app *App) runWithGracefulShutdown(server *http.Server, timeout time.Durati
 		}
 
 		app.logger.Println("Server shutdown complete")
+
 		return nil
 	}
 }
