@@ -217,6 +217,11 @@ func (ctx *Context) SetHeader(key, value string) {
 	ctx.Response.Header().Set(key, value)
 }
 
+// GetResponseHeader retrieves a response header by key.
+func (ctx *Context) GetResponseHeader(key string) string {
+	return ctx.Response.Header().Get(key)
+}
+
 // SetCookie sets a response cookie.
 func (ctx *Context) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(ctx.Response, cookie)
