@@ -12,5 +12,6 @@ func newRequest(method, path string) *http.Request {
 func serve(app *App, req *http.Request) *httptest.ResponseRecorder {
 	res := httptest.NewRecorder()
 	app.ServeHTTP(res, req)
+
 	return res
 }
