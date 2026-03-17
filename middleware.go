@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// responseWriter extends the http response writer to capture additional details
+// responseWriter extends the http response writer to capture additional details.
 type responseWriter struct {
 	http.ResponseWriter
 
@@ -43,32 +43,32 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 
 func Logger() MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		return http.HandlerFunc(func(httpResponse http.ResponseWriter, httpRequest *http.Request) {
 			start := time.Now()
-			rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+			responseWriter := &responseWriter{ResponseWriter: httpResponse, status: http.StatusOK}
 
 			// call next handler in chain
-			next.ServeHTTP(rw, r)
+			next.ServeHTTP(responseWriter, httpRequest)
 
 			// log details. [method] /path address status duration size
-			log.Printf("[%s] %s %s - %d (%v) %d bytes", r.Method, r.URL.Path, r.RemoteAddr,
-				rw.status, time.Since(start), rw.size)
+			log.Printf("[%q] %q %q - %d (%v) %d bytes", httpRequest.Method, httpRequest.URL.Path, httpRequest.RemoteAddr,
+				responseWriter.status, time.Since(start), responseWriter.size)
 		})
 	}
 }
 
 func Recovery() MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		return http.HandlerFunc(func(httpResponse http.ResponseWriter, httpRequest *http.Request) {
 			defer func() {
 				if err := recover(); err != nil {
 					// log stack trace
 					log.Printf("PANIC: %v\n%s", err, debug.Stack())
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					http.Error(httpResponse, "Internal Server Error", http.StatusInternalServerError)
 				}
 			}()
 
-			next.ServeHTTP(w, r)
+			next.ServeHTTP(httpResponse, httpRequest)
 		})
 	}
 }
@@ -97,8 +97,10 @@ func CORSWithConfig(config CORSConfig) MiddlewareFunc {
 	for _, origin := range config.AllowOrigins {
 		if origin == "*" {
 			allowAll = true
+
 			break
 		}
+
 		origins[origin] = struct{}{}
 	}
 
@@ -116,41 +118,42 @@ func CORSWithConfig(config CORSConfig) MiddlewareFunc {
 	}
 
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			origin := r.Header.Get("Origin")
+		return http.HandlerFunc(func(response http.ResponseWriter, httpReq *http.Request) {
+			origin := httpReq.Header.Get("Origin")
 
 			if allowAll {
-				w.Header().Set("Access-Control-Allow-Origin", "*")
+				response.Header().Set("Access-Control-Allow-Origin", "*")
 			} else if _, ok := origins[origin]; ok {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
-				w.Header().Set("Vary", "Origin")
+				response.Header().Set("Access-Control-Allow-Origin", origin)
+				response.Header().Set("Vary", "Origin")
 			}
 
 			if config.AllowCredentials {
-				w.Header().Set("Access-Control-Allow-Credentials", "true")
+				response.Header().Set("Access-Control-Allow-Credentials", "true")
 			}
 
 			if len(config.ExposeHeaders) > 0 {
-				w.Header().Set("Access-Control-Expose-Headers", strings.Join(config.ExposeHeaders, ", "))
+				response.Header().Set("Access-Control-Expose-Headers", strings.Join(config.ExposeHeaders, ", "))
 			}
 
-			w.Header().Set("Access-Control-Allow-Methods", strings.Join(allowMethods, ", "))
-			w.Header().Set("Access-Control-Allow-Headers", strings.Join(allowHeaders, ", "))
+			response.Header().Set("Access-Control-Allow-Methods", strings.Join(allowMethods, ", "))
+			response.Header().Set("Access-Control-Allow-Headers", strings.Join(allowHeaders, ", "))
 
 			if config.MaxAge > 0 {
-				w.Header().Set("Access-Control-Max-Age", fmt.Sprintf("%d", config.MaxAge))
+				response.Header().Set("Access-Control-Max-Age", fmt.Sprintf("%d", config.MaxAge))
 			}
 
-			if r.Method == "OPTIONS" {
+			if httpReq.Method == "OPTIONS" {
 				if config.PreflightContinue {
-					next.ServeHTTP(w, r)
+					next.ServeHTTP(response, httpReq)
 				} else {
-					w.WriteHeader(http.StatusNoContent)
+					response.WriteHeader(http.StatusNoContent)
 				}
+
 				return
 			}
 
-			next.ServeHTTP(w, r)
+			next.ServeHTTP(response, httpReq)
 		})
 	}
 }
